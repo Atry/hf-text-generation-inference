@@ -146,24 +146,31 @@ COPY --from=transformers-builder /usr/src/transformers/build/lib.linux-x86_64-cp
 RUN cd /usr/src/transformers && pip install -e . --no-cache-dir && pip install einops --no-cache-dir
 
 # Install server
-COPY proto proto
-COPY server server
-COPY server/Makefile server/Makefile
-RUN cd server && \
-    make gen-server && \
-    pip install -r requirements.txt && \
-    pip install ".[bnb, accelerate]" --no-cache-dir
 
 # Install router
 COPY --from=builder /usr/src/target/release/text-generation-router /usr/local/bin/text-generation-router
 # Install launcher
 COPY --from=builder /usr/src/target/release/text-generation-launcher /usr/local/bin/text-generation-launcher
 
+COPY proto proto
+COPY server/requirements.txt server/requirements.txt
+COPY server/pyproject.toml server/pyproject.toml
+RUN cd server && pip install -r requirements.txt
+COPY server/text_generation_server server/text_generation_server
+COPY server/Makefile server/Makefile
+COPY server/Makefile-flash-att server/Makefile-flash-att
+COPY server/Makefile-transformers server/Makefile-transformers
+RUN cd server && \
+    make gen-server && \
+    pip install ".[bnb, accelerate]" --no-cache-dir
+RUN apt update && apt install build-essential g++ -y
+
 # AWS Sagemaker compatbile image
 FROM base as sagemaker
 
 COPY sagemaker-entrypoint.sh entrypoint.sh
 RUN chmod +x entrypoint.sh
+RUN pip install triton
 
 # NVIDIA env vars
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -174,6 +181,7 @@ ENTRYPOINT ["./entrypoint.sh"]
 
 # Final image
 FROM base
+
 
 ENTRYPOINT ["text-generation-launcher"]
 CMD ["--json-output"]
