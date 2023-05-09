@@ -631,7 +631,7 @@ class Seq2SeqLM(Model):
         ) in enumerate(iterator):
             # Select next token
             next_token_id, logprobs = next_token_chooser(
-                all_decoder_input_ids.view(1, -1), logits
+                all_decoder_input_ids.view(1, -1), logits[-1:, :]
             )
 
             # Append next token to decoder tokens

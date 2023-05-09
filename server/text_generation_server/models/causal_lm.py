@@ -549,7 +549,7 @@ class CausalLM(Model):
         ) in enumerate(iterator):
             # Select next token
             next_token_id, logprobs = next_token_chooser(
-                all_input_ids.view(1, -1), logits
+                all_input_ids.view(1, -1), logits[-1:, :]
             )
 
             # Append next token to all tokens
@@ -591,7 +591,7 @@ class CausalLM(Model):
             # Prefill
             if stopping_criteria.current_tokens == 1:
                 # Remove generated token to only have prefill and add nan for first prompt token
-                prefill_logprobs = [float("nan")] + logprobs.gather(
+                prefill_logprobs = [float("nan")] + torch.log_softmax(logits, -1).gather(
                     1, all_input_ids[1:]
                 ).squeeze(1)[-new_input_length:-1].tolist()
                 prefill_token_ids = all_input_ids[-new_input_length:-1]
