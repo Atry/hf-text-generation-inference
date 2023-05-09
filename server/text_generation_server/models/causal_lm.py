@@ -591,9 +591,9 @@ class CausalLM(Model):
             # Prefill
             if stopping_criteria.current_tokens == 1:
                 # Remove generated token to only have prefill and add nan for first prompt token
-                prefill_logprobs = [float("nan")] + torch.log_softmax(logits, -1).gather(
-                    1, all_input_ids[1:]
-                ).squeeze(1)[-new_input_length:-1].tolist()
+                prefill_logprobs = [float("nan")] + torch.log_softmax(
+                    logits, -1
+                ).gather(1, all_input_ids[1:]).squeeze(1)[-new_input_length:-1].tolist()
                 prefill_token_ids = all_input_ids[-new_input_length:-1]
                 prefill_texts = self.tokenizer.batch_decode(
                     prefill_token_ids,
